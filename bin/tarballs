@@ -17,9 +17,9 @@ my &pad = {
 
 sub encrypt-path ($path) {
 	@(encrypt($path.encode, :aes256, :$iv, :$key))
-	.hyper.map({pad(.base(36))})
-	.join(｢｣)
-	.lc;
+		.hyper.map({pad(.base(36))})
+		.join(｢｣)
+		.lc;
 }
 
 sub decrypt-pathword ($pathword) {
