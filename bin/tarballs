@@ -35,8 +35,10 @@ sub decrypt-pathword ($pathword) {
 
 sub untar (Blob $tarball, Str $path) {
 	my $tar = Proc::Async.new: :w, ｢tar｣, ｢--strip｣, ｢1｣, ｢-U｣, ｢-C｣, $path, ｢-xzv｣;
-	$tar.start;
+	my $completion = $tar.start;
 	$tar.write($tarball);
+	$tar.close-stdin;
+	await $completion;
 }
 
 multi MAIN (｢encrypt｣, $path) {
@@ -72,7 +74,7 @@ multi MAIN (
 			request-body -> (:$pathword, :$ball, *%rest) {
 				my $path = "{$extract-root}/{decrypt-pathword($pathword.Str)}";
 				my $filename = $ball.filename;
-				await untar($ball.body-blob, $path);
+				untar($ball.body-blob, $path);
 				content ｢text/plain｣, ｢thanks｣;
 			}
 		}
