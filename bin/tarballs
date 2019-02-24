@@ -28,34 +28,16 @@ sub decrypt-pathword ($pathword) {
 		.comb(2)
 		.map({.parse-base(36)});
 	for @ints {
-		$buf.write-uint8($buf.bytes, $_);
+		$buf.append($_);
 	};
 	return decrypt($buf, :aes256, :$iv, :$key).decode;
 }
 
 sub untar (Blob $tarball, Str $path) {
-	my $tar = Proc::Async.new: :w, ｢tar｣, ｢xzv｣, "-U", "-C", $path, "--strip", 1;
-	$tar.bind-stdout($*OUT);
-	$tar.bind-stderr($*ERR);
+	my $tar = Proc::Async.new: :w, ｢tar｣, ｢--strip｣, ｢1｣, ｢-U｣, ｢-C｣, $path, ｢-xzv｣;
 	$tar.start;
-	await $tar.write($tarball);
+	$tar.write($tarball);
 }
-
-multi extract (｢x-gzip｣, Blob $tarball, Str $path) {
-	untar($tarball, $path);
-}
-
-multi extract (｢x-tar｣, Blob $tarball, Str $path) {
-	spurt "tarball", $tarball;
-	untar($tarball, $path);
-}
-
-multi extract (｢zip｣, Blob $ball, Str $path) {
-	my $zip = Proc::Async.new: :w, ｢unzip｣, "-d", $path;
-	$zip.start;
-	$zip.write($ball);
-}
-
 
 multi MAIN (｢encrypt｣, $path) {
 	say encrypt-path($path);
@@ -90,8 +72,7 @@ multi MAIN (
 			request-body -> (:$pathword, :$ball, *%rest) {
 				my $path = "{$extract-root}/{decrypt-pathword($pathword.Str)}";
 				my $filename = $ball.filename;
-				say "extracting $filename to $path";
-				extract($ball.content-type.subtype, $ball.body-blob, $path);
+				await untar($ball.body-blob, $path);
 				content ｢text/plain｣, ｢thanks｣;
 			}
 		}
