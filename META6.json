@@ -1,0 +1,22 @@
+{
+	"authors" : [
+		"chee"
+	],
+	"build-depends" : [ ],
+	"depends" : [
+		"OpenSSL::CryptTools",
+		"cro"
+	],
+	"description" : "taking tarballs in the snooter",
+	"license" : "Artistic-2.0",
+	"name" : "tarballs",
+	"perl" : "6.c",
+	"provides" : {
+		"tarballs" : "bin/tarballs"
+	},
+	"resources" : [ ],
+	"source-url" : "",
+	"tags" : [ ],
+	"test-depends" : [ ],
+	"version" : "0.0.1"
+}

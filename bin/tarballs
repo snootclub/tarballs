@@ -1,0 +1,96 @@
+#!/usr/bin/env perl6
+use OpenSSL::CryptTools;
+my $iv = %*ENV<tarballs_iv>;
+my $key = %*ENV<tarballs_key>;
+
+die ｢you gotta pass tarballs_iv and tarballs_key as env vars｣
+	unless $iv and $key;
+
+$iv .= encode;
+$key .= encode;
+
+my &pad = {
+	.chars == 1
+		?? "0$_"
+		!! $_
+}
+
+sub encrypt-path ($path) {
+	@(encrypt($path.encode, :aes256, :$iv, :$key))
+	.hyper.map({pad(.base(36))})
+	.join(｢｣)
+	.lc;
+}
+
+sub decrypt-pathword ($pathword) {
+	my $buf = Buf.new;
+	my @ints = $pathword
+		.comb(2)
+		.map({.parse-base(36)});
+	for @ints {
+		$buf.write-uint8($buf.bytes, $_);
+	};
+	return decrypt($buf, :aes256, :$iv, :$key).decode;
+}
+
+multi extract (｢x-gzip｣, Blob $tarball, Str $path) {
+	my $tar = Proc::Async.new: :w, ｢tar｣, ｢xzv｣, "-C", $path;
+	$tar.start;
+	$tar.write($tarball);
+}
+
+multi extract (｢zip｣, Blob $ball, Str $path) {
+	my $zip = Proc::Async.new: :w, ｢unzip｣, "-d", $path;
+	$zip.start;
+	$zip.write($ball);
+}
+
+
+multi MAIN (｢encrypt｣, $path) {
+	say encrypt-path($path);
+}
+
+multi MAIN (｢decrypt｣, $pathword) {
+	say decrypt-pathword($pathword);
+}
+
+multi MAIN (｢serve｣, Str :$extract-root = $*CWD.Str, Int :$port = 7440) {
+	use Cro::HTTP::Server;
+	use Cro::HTTP::Router;
+	my $application := route {
+		get -> {
+			content ｢text/html｣, q:to/index.html/
+				<!doctype html>
+				<style>{font-family: avenir next; font-color: #333;}</style>
+				<body bgcolor=#fe8>
+				<form method="POST" action="/" enctype="multipart/form-data">
+					<input type="text" name="pathword">
+					<input type="file" name="ball">
+					<input type="submit">
+				</form>
+				index.html
+		}
+		post -> {
+			request-body -> (:$pathword, :$ball, *%rest) {
+				my $path = "{$extract-root}/{decrypt-pathword($pathword.Str)}";
+				my $filename = $ball.filename;
+				try extract($ball.content-type.subtype, $ball.body-blob, $path);
+				content ｢text/plain｣, ｢thanks｣;
+			}
+		}
+	}
+	my $port := 2314;
+	my $host := ｢localhost｣;
+	my Cro::Service \service := Cro::HTTP::Server.new(
+		:host($host),
+		:port($port),
+		:$application
+	);
+
+	service.start;
+
+	react whenever signal(SIGINT) {
+		service.stop;
+		exit;
+	}
+}
