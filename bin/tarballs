@@ -1,4 +1,5 @@
 #!/usr/bin/env perl6
+my %*SUB-MAIN-OPTS = :named-anywhere;
 use OpenSSL::CryptTools;
 my $iv = %*ENV<tarballs_iv>;
 my $key = %*ENV<tarballs_key>;
@@ -73,7 +74,7 @@ multi MAIN (
 		}
 		post -> {
 			request-body -> (:$pathword, :$ball, *%rest) {
-				my $path = "{$prefix}/{decrypt-pathword($pathword.Str)}{$suffix}";
+				my $path = "{$prefix}/{decrypt-pathword($pathword.Str)}/{$suffix}";
 				my $filename = $ball.filename;
 				untar($ball.body-blob, $path);
 				content ｢text/plain｣, ｢thanks｣;
