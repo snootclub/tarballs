@@ -54,7 +54,12 @@ multi MAIN (｢decrypt｣, $pathword) {
 	say decrypt-pathword($pathword);
 }
 
-multi MAIN (｢serve｣, Str :$extract-root = $*CWD.Str, Int :$port = 7440) {
+multi MAIN (
+	｢serve｣,
+	Str :$extract-root = $*CWD.Str, #= the root to start extractions from
+	Int :$port = 7440, #= port to bind to
+	Str :$host = ｢localhost｣ #= host to bind to
+) {
 	use Cro::HTTP::Server;
 	use Cro::HTTP::Router;
 	my $application := route {
@@ -79,8 +84,7 @@ multi MAIN (｢serve｣, Str :$extract-root = $*CWD.Str, Int :$port = 7440) {
 			}
 		}
 	}
-	my $port := 2314;
-	my $host := ｢localhost｣;
+
 	my Cro::Service \service := Cro::HTTP::Server.new(
 		:host($host),
 		:port($port),
