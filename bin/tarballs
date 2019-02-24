@@ -51,7 +51,8 @@ multi MAIN (｢decrypt｣, $pathword) {
 
 multi MAIN (
 	｢serve｣,
-	Str :$extract-root = $*CWD.Str, #= the root to start extractions from
+	Str :$prefix = $*CWD.Str, #= the root to start extractions from
+	Str :$suffix = ｢application｣, #= the suffix to add to extraction targets
 	Int :$port = 7440, #= port to bind to
 	Str :$host = ｢localhost｣ #= host to bind to
 ) {
@@ -72,7 +73,7 @@ multi MAIN (
 		}
 		post -> {
 			request-body -> (:$pathword, :$ball, *%rest) {
-				my $path = "{$extract-root}/{decrypt-pathword($pathword.Str)}";
+				my $path = "{$prefix}/{decrypt-pathword($pathword.Str)}{$suffix}";
 				my $filename = $ball.filename;
 				untar($ball.body-blob, $path);
 				content ｢text/plain｣, ｢thanks｣;
