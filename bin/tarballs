@@ -35,7 +35,7 @@ sub decrypt-pathword ($pathword) {
 }
 
 sub untar (Blob $tarball, Str $path) {
-	my $tar = Proc::Async.new: :w, ｢tar｣, ｢--strip｣, ｢1｣, ｢-U｣, ｢-C｣, $path, ｢-xzv｣;
+	my $tar = Proc::Async.new: :w, ｢tar｣, ｢-U｣, ｢-C｣, $path, ｢-xzv｣;
 	my $completion = $tar.start;
 	$tar.write($tarball);
 	$tar.close-stdin;
